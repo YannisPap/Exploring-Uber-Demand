@@ -1,28 +1,30 @@
-Exploring UBER demand in NYC by Yannis Pappas
+Exploring UBER demand in NYC
 ========================================================
 
 ```{r global_options, include=FALSE}
-knitr::opts_chunk$set(echo=FALSE, warning=FALSE, message=FALSE)
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE,
+                      cache = TRUE, cache.path = '../Cache/Exploring-Uber-Demand/', 
+                      fig.path = '../Figures/Exploring-Uber-Demand/')
 ```
 
-```{r}
+```{r Loading libraries}
 # Load all of the packages that you end up using
 # in your analysis in this code chunk.
 
 # Notice that the parameter "echo" was set to FALSE for this code chunk.
 # This prevents the code from displaying in the knitted HTML output.
 # You should set echo=FALSE for all code chunks in your file.
-
+library(magrittr)
 library(readr)
 library(ggplot2)
-library(magrittr)
-library(dplyr)
 library(tidyr)
+library(dplyr)
 library(reshape2)
 library(gridExtra)
 library(zoo)
 library(psych)
 library(lubridate)
+library(grid)
 ```
 
 In the current project I'm exploring the factors that affect Uber cars demand in NYC.  
@@ -51,10 +53,11 @@ The main dataset contained over 10 million observations of 4 variables which agg
 * sd: Snow depth in inches.
 * hday: Being a holiday (Y) or not (N).
 
-```{r echo=FALSE, Load_the_Data}
+```{r Loading dataset}
 # Load the Data
 uber <- read_csv("uber.csv", col_types = cols(
-  borough = col_factor(levels = c("Bronx", "Brooklyn", "EWR", "Manhattan", "Queens", "Staten Island", "Unknown")), 
+  borough = col_factor(levels = c("Bronx", "Brooklyn", "EWR", "Manhattan",
+                                  "Queens", "Staten Island", "Unknown")), 
   hday = col_factor(levels = c("Y", "N")), 
   pcp01 = col_double(), 
   pcp06 = col_double(), 
@@ -67,15 +70,21 @@ str(uber)
 
 # Univariate Plots Section
 ## Pickups
+```{r Defining histogram function}
+histogram <- function(varname, bs = NULL, bw = NULL){
+  h <- ggplot(uber.spread, aes_string(varname)) + geom_histogram(bins = bs, binwidth = bw)
+  return(h)
+}
+```
 
-```{r}
+```{r Pickups histogram}
 ggplot(uber, aes(pickups)) +
   geom_histogram()
 ```
 
 The histogram is heavily skewed. I will use a square root scale on both axis to observe the left side more clearly.
 
-```{r}
+```{r Pickups histogram(sqrt)}
 ggplot(uber, aes(pickups)) +
   geom_histogram() +
   scale_x_sqrt() +
@@ -85,7 +94,7 @@ ggplot(uber, aes(pickups)) +
 This is a quite strange distribution. It looks like a union of normal distributions. I am suspecting that the different boroughs have very discrete distributions.  
 Although I am still in the univariate exploration phase I need to see the above histogram on borough level.
 
-```{r}
+```{r Pickups histogram pre borough(color)}
 ggplot(uber, aes(pickups)) +
   geom_histogram(aes(fill = borough)) +
   scale_x_sqrt(breaks = c()) +
@@ -95,7 +104,7 @@ ggplot(uber, aes(pickups)) +
 We can see that the majority of 0 pickups is created solely by EWR, Staten Island and from pickup data that we are missing the borough.  
 The rest 4 areas seem to have lightly skewed distribution on a squared root scale. I will split the boroughs.
 
-```{r}
+```{r Pickups histogram per borough(facet)}
 ggplot(uber, aes(pickups)) +
   geom_histogram() +
   scale_x_sqrt() +
@@ -118,25 +127,26 @@ Since all boroughs are neighboring, I used weather information from the same wea
 In a more optimized version we may use more localized weather stations but the area is relatively narrow for significant weather differences.  
 Additionally, using information from different stations may enter noise by various factors (like missing values or small calibration differences).   
 
-```{r}
-uber.spread <- uber %>% spread(borough, pickups)
+```{r Categorizing variables}
+# In order to plot correctly the weather variables, I need to transform uber
+# dataframe to wide format so that each line represent one time instance. 
+uber.spread <- uber %>% spread(borough, pickups, fill = 0) %>% rename(Unknown = `<NA>`)
 ```
 
 
-```{r}
-d <- melt(uber.spread[2:10])
+```{r Weather histogram(facet)}
+d <- melt(uber.spread %>% dplyr::select(spd:sd)) #spd:sd = all the weather variables
 
 ggplot(d, aes(value)) +
   geom_histogram() +
   facet_wrap(~variable , scales = 'free')
-
 ```
 
 ### Wind Speed
 
-```{r}
-ggplot(uber.spread, aes(spd)) +
-  geom_histogram(binwidth = 2)
+
+```{r Wind speed histogram}
+histogram('spd', NULL, 2)
 ```
 
 The histogram is positively skewed with a Mode of 5 miles/hour, means that most of the time there was a light breeze.  
@@ -144,14 +154,13 @@ The speed tops at 21 miles/hour which is not even a strong breeze, though I don'
 
 ### Visibility
 
-```{r}
-ggplot(uber.spread, aes(vsb)) +
-  geom_histogram(binwidth = 0.1) +
+```{r Visibility histogram}
+histogram('vsb', NULL, 0.1) +
   scale_y_log10(breaks = c(0, 10, 100, 1000)) +
   scale_x_continuous(breaks = seq(0, 10, 1))
 ```
 
-```{r}
+```{r Visibility summary}
 summary(uber.spread$vsb)
 uber.spread %>% filter(vsb < 10) %>% count()
 ```
@@ -163,9 +172,8 @@ We can also notice some "spikes" denoting (probably) rounding to integer values.
 
 The period of observation is not ideal for examining how temperature affects ridership because the data do not include July which is the hottest month in NYC.
 
-```{r}
-ggplot(uber.spread, aes(temp)) +
-  geom_histogram() +
+```{r Temperature histogram}
+histogram('temp') +
   scale_x_continuous(breaks = seq(0,90,5))
 
 summary(uber.spread$temp)
@@ -181,9 +189,8 @@ The gap between the modes may be caused by a rapid rising of temperature during 
 
 Thus, dew point is an indication of the humidity.
 
-```{r}
-ggplot(uber.spread, aes(dewp)) +
-  geom_histogram()
+```{r Dew point histogram}
+histogram('dewp')
 ```
 
 Since dew point is correlated with temperature (by definition) their distributions appears similar.
@@ -194,9 +201,8 @@ Since dew point is correlated with temperature (by definition) their distributio
 
 Air pressure affects the weather in a later time, thus there might be a delayed effect in the ridership.
 
-```{r}
-ggplot(uber.spread, aes(slp)) +
-  geom_histogram()
+```{r SLP histogram}
+histogram('slp')
 ```
 
 Sea level pressure has a normal distribution with mode at 1020 mBars.
@@ -206,37 +212,39 @@ Sea level pressure has a normal distribution with mode at 1020 mBars.
 The amount of rain is very possible to affect the demand.  
 We have 3 measurements of precipitation, one for the last hour, one for the last 6 hours and one for the last 24 hours.  
 
-```{r}
-h1 <- ggplot(uber.spread, aes(pcp01)) +
-  geom_histogram() +
-  scale_x_sqrt() +
-  scale_y_sqrt() +
-  coord_cartesian(xlim = c(0, 2.1), ylim = c(0, 4000))
+```{r Precipitation histogram(grid)}
+pcp.hist <- function(varname) {
+  h <- histogram(varname) + scale_x_sqrt() + scale_y_sqrt() + 
+    coord_cartesian(xlim = c(0, 2.1), ylim = c(0, 4000))
+  return(h)
+}
 
-h2 <- ggplot(uber.spread, aes(pcp06)) +
-  geom_histogram() +
-  scale_x_sqrt() +
-  scale_y_sqrt() +
-  coord_cartesian(xlim = c(0, 2.1), ylim = c(0, 4000))
-
-h3 <- ggplot(uber.spread, aes(pcp24)) +
-  geom_histogram() +
-  scale_x_sqrt() +
-  scale_y_sqrt() +
-  coord_cartesian(xlim = c(0, 2.1), ylim = c(0, 4000))
+h1 <- pcp.hist('pcp01')
+h2 <- pcp.hist('pcp06')
+h3 <- pcp.hist('pcp24')
 
 grid.arrange (h1, h2, h3, ncol = 1)
 ```
 
-We can see how the histogram is transformed by the built up of the values because of the summation. 
+We can see how the histogram is transformed by the built up of the values because of the summation, which is more obvious if we use a log10 scale for the X axis. 
+
+```{r}
+temp <- uber.spread %>% dplyr::select(starts_with('pcp')) %>% 
+  gather('precipitation', 'inches', 1:3)
+
+ggplot(temp, aes(inches)) +
+  geom_histogram() +
+  scale_x_log10() +
+  facet_wrap(~precipitation, ncol = 1)
+```
+
 
 ### Snow Depth
 
 Snow depth may also affect ridership.
 
-```{r}
-ggplot(uber.spread, aes(sd)) +
-  geom_histogram() +
+```{r Snow depth histogram}
+histogram('sd') +
   scale_x_sqrt() +
   scale_y_sqrt()
 
@@ -267,7 +275,7 @@ The main feature of interest is the number of pickups. Both from environmental a
 
 A critical factor for sure is the borough. The differences between borough are so big that maybe I should create a model per borough rather than use the borough as a factor.
 
-```{r}
+```{r Total pickups per borough}
 uber %>% group_by(borough) %>% 
   summarise(`Total Pickups` = sum(pickups)) %>% 
   arrange(desc(`Total Pickups`))
@@ -294,26 +302,30 @@ The first question  we can use bivariate plots to answer is if I should create o
 
 ### Time variables matrix
 
-```{r}
+```{r Extracting time variables}
 uber.spread <- uber.spread %>% 
-  mutate(pickups = Bronx +Brooklyn + EWR + Manhattan + Queens + `Staten Island` + !is.na(`<NA>`)) %>% 
+  mutate(pickups = Bronx +Brooklyn + EWR + Manhattan + Queens + `Staten Island`
+         + !is.na(Unknown)) %>% 
   mutate(day = day(pickup_dt)) %>%
   mutate(hour = hour(pickup_dt)) %>%
+  mutate(week = week(pickup_dt)) %>% 
   mutate(wday = wday(pickup_dt, label = TRUE)) %>% 
-  mutate(workday = ifelse(wday == 'Sat' | wday == 'Sun' | hday == 'Y', 'N', 'Y')) %>% 
+  mutate(workday = ifelse(wday == 'Sat' | wday == 'Sun' | 
+                            hday == 'Y', 'N', 'Y')) %>% 
   mutate(yday = yday(pickup_dt))
 
 uber <- uber %>% 
   mutate(day = day(pickup_dt)) %>%
   mutate(hour = hour(pickup_dt)) %>%
+  mutate(week = week(pickup_dt)) %>% 
   mutate(wday = wday(pickup_dt, label = TRUE)) %>% 
-  mutate(workday = ifelse(wday == 'Sat' | wday == 'Sun' | hday == 'Y', 'N', 'Y')) %>% 
+  mutate(workday = ifelse(wday == 'Sat' | wday == 'Sun' | 
+                            hday == 'Y', 'N', 'Y')) %>% 
   mutate(yday = yday(pickup_dt))
 ```
 
-
-```{r, fig.width=12, fig.height=8}
-pairs.panels(uber.spread[ , c(1, 11:23)])
+```{r Time pairs, fig.width=12, fig.height=8}
+pairs.panels(uber.spread %>% dplyr::select(pickup_dt, hday:yday))
 ```
 
 From the above pairs we can see that:  
@@ -325,8 +337,11 @@ From the above pairs we can see that:
 
 In general, ridership in all boroughs except Staten Island and EWR are time dependent.
 
-```{r, fig.width=12, fig.height=8}
-pairs.panels(uber.spread[ , c(2:10, 12:19)])
+### Weather variables matrix
+
+```{r Weather pairs, fig.width=12, fig.height=8}
+#Bronx:Unknown = all boroughs, spd:sd = all weather variables.
+pairs.panels(uber.spread %>% dplyr::select(Bronx:Unknown, spd:sd))
 ```
 
 On the weather part,
@@ -338,15 +353,20 @@ We can conclude that there are strong indications that a single model cannot hav
 
 ### Pickups VS datetime
 
-```{r}
+```{r Pickups VS datetime}
 ggplot(uber.spread, aes(yday, pickups)) +
   geom_jitter(alpha = 0.1) +
   geom_line(stat = 'summary', fun.y = mean) +
-  geom_line(stat = 'summary', fun.y = quantile, fun.args = list(probs = 0.25), linetype = 2, color = 'blue') +
-  geom_line(stat = 'summary', fun.y = quantile, fun.args = list(probs = 0.5), color = 'blue') +
-  geom_line(stat = 'summary', fun.y = quantile, fun.args = list(probs = 0.75), linetype = 2, color = 'blue') +
+  geom_line(stat = 'summary', fun.y = quantile, fun.args = list(probs = 0.25), 
+            linetype = 2, color = 'blue') +
+  geom_line(stat = 'summary', fun.y = quantile, fun.args = list(probs = 0.5), 
+            color = 'blue') +
+  geom_line(stat = 'summary', fun.y = quantile, fun.args = list(probs = 0.75), 
+            linetype = 2, color = 'blue') +
   geom_smooth() +
-  scale_x_continuous(breaks = c('1 Jan.' = 0, '1 Feb.' = 31, '1 Mar.' = 59, '1 Apr.' = 90, '1 May' = 120, '1 Jun.' = 151, '30 Jun.' = 181))
+  scale_x_continuous(breaks = c('1 Jan.' = 0, '1 Feb.' = 31, '1 Mar.' = 59, 
+                                '1 Apr.' = 90, '1 May' = 120, '1 Jun.' = 151, 
+                                '30 Jun.' = 181))
 
 ```
 
@@ -354,7 +374,7 @@ Plotting the pickups VS datetime we can see that there is a clear pattern. There
 
 ### Distribution of pickups per day
 
-```{r}
+```{r Pickups VS wday}
 ggplot(uber.spread, aes(wday, pickups)) +
   geom_boxplot()
 ```
@@ -363,7 +383,7 @@ There is a pattern also during the week. The demand starts low on Monday and the
 
 ### Pickups VS time of the day
 
-```{r}
+```{r Pickups VS hour}
 ggplot(uber.spread, aes(hour, pickups)) +
   geom_jitter(alpha = 0.2) +
   geom_smooth()
@@ -375,7 +395,7 @@ We can see a kind of split at around 7:00 until 10:00 and also the spread is get
 
 ### Impact of time of the day to ridership
 
-```{r}
+```{r Hour linear model}
 m1 <- lm(formula = pickups ~ poly(hour,7), data = uber.spread)
 summary(m1)
 ```
@@ -384,16 +404,18 @@ So far, hour of the day seems the strongest criterion for forecasting the riders
 
 ### Working days VS non-working days
 
-```{r}
+```{r Pickups VS workday}
 ggplot(uber.spread, aes(workday, pickups)) +
   geom_boxplot()
 ```
-```{r}
+```{r Brooklyn pickups VS workday}
 ggplot(uber.spread, aes(workday, Brooklyn)) +
   geom_boxplot()
 ```
-```{r}
-mean((uber %>% filter(borough == 'Brooklyn') %>% filter(workday == 'N'))$pickups) / mean((uber %>% filter(workday == 'N'))$pickups)
+```{r Brooklyn pickups VS workday proportion}
+mean((uber %>% filter(borough == 'Brooklyn') %>% 
+        filter(workday == 'N'))$pickups) / mean((uber %>% 
+                                                   filter(workday == 'N'))$pickups)
 ```
 
 In general, there is a slight effect of working vs non-working days in ridership.  
@@ -401,7 +423,7 @@ This is not the case for Brooklyn where in non-working days there is a 35.71% hi
 
 ### Pickups VS temperature
 
-```{r}
+```{r Pickups VS temperature}
 ggplot(uber.spread, aes(temp, pickups)) +
   geom_jitter(alpha = 0.2) +
   geom_smooth() 
@@ -411,7 +433,7 @@ The temperature seems to affect the ridership slightly until 75 degrees but it's
 I will create a new variable named "over_75F"
  
  
-```{r}
+```{r Creating over_75 variable}
 uber.spread <- uber.spread %>% mutate(over_75 = ifelse(temp > 75, 'Y', 'N'))
 uber <- uber %>% mutate(over_75 = ifelse(temp > 75, 'Y', 'N'))
 ```
@@ -424,7 +446,7 @@ Now the correlation is more obvious.
 
 ### Temperature VS datetime
 
-```{r}
+```{r Temperature VS datetime}
 ggplot(uber.spread,aes(pickup_dt, temp)) +
   geom_point(alpha = 0.2) +
   geom_smooth() +
@@ -436,7 +458,7 @@ If we plot the temperature over time we can also explain the bi-modal distributi
 
 ### Dew point VS temperature
 
-```{r}
+```{r Dew point VS temperature}
 ggplot(uber.spread, aes(temp, dewp)) +
   geom_jitter(alpha = 0.2) +
   geom_smooth(method = lm)
@@ -446,7 +468,7 @@ Dew point is correlated with the temperature so probably I will use just one of 
 
 ### Pickups VS wind spped 
 
-```{r}
+```{r Pickups VS wind speed}
 ggplot(uber, aes(spd, pickups)) +
   geom_jitter(alpha = 0.05) + 
   geom_smooth() +
@@ -458,7 +480,7 @@ There is a slight negative correlation between wind speed and ridership but I do
 
 ### Pickups VS visibility
 
-```{r}
+```{r pickups VS visibility}
 ggplot(uber.spread, aes(vsb, pickups)) +
   geom_jitter(alpha = 0.1) +
   geom_smooth()
@@ -466,7 +488,7 @@ ggplot(uber.spread, aes(vsb, pickups)) +
 
 ### Pickups VS sea level pressure
 
-```{r}
+```{r Pickups VS SLP}
 ggplot(uber.spread, aes(slp, pickups)) +
   geom_jitter(alpha = 0.1) +
   geom_smooth()
@@ -474,7 +496,7 @@ ggplot(uber.spread, aes(slp, pickups)) +
 
 ### Pickups VS precipitation
 
-```{r}
+```{r Pickups VS precipitations(01)}
 ggplot(uber.spread, aes(pcp01, pickups)) +
   xlim(0,quantile(uber.spread$pcp01, 0.95)) +
   geom_jitter(alpha = 0.1) +
@@ -485,7 +507,7 @@ Precipitation do not seem to have an effect on ridership. I will investigate it 
 
 ### Pickups VS snow depth
 
-```{r}
+```{r Pickups VS snow depth}
 ggplot(uber.spread, aes(sd, pickups)) +
   geom_jitter(alpha = 0.1) +
   geom_smooth()
@@ -524,13 +546,13 @@ In this section I will finalize the findings that came up on the previous sectio
 
 ### Borough and time of the day
 
-```{r}
+```{r Borough and time of the day}
 ggplot(subset(uber, !is.na(borough)), aes(hour, pickups)) +
   geom_jitter(alpha = 0.3, aes(colour = borough)) +
   geom_smooth(aes(color = borough))
 ```
 
-```{r}
+```{r Borough and time of the day(log)}
 ggplot(subset(uber, !is.na(borough)), aes(hour, pickups)) +
   geom_jitter(alpha = 0.3, aes(colour = borough)) +
   geom_smooth(aes(color = borough)) +
@@ -541,7 +563,7 @@ It is clear that the time of the day and the borough are two of the most signifi
 
 ### Day and time of the day
 
-```{r}
+```{r Day and time of the day}
 ggplot(uber.spread, aes(x = wday, y = hour, fill = pickups)) +
   geom_tile() +
   scale_fill_distiller(palette = 'Spectral')
@@ -553,13 +575,13 @@ We can also notice a transposition of the demand during Saturday and Sunday for 
 
 ### Working VS non-working days
 
-```{r}
+```{r Working VS non-working days}
 ggplot(uber.spread, aes(hour, pickups)) +
   geom_jitter(alpha = 0.3, aes(colour = workday)) +
   geom_smooth(aes(color = workday))
 ```
 
-```{r}
+```{r Working VS non-working days per major borough}
 uber.major <- uber %>% 
   filter(borough %in% c('Manhattan', 'Brooklyn', 'Queens', 'Bronx')) %>% 
   droplevels()
@@ -569,7 +591,7 @@ ggplot(uber.major, aes(hour, pickups)) +
   geom_smooth(aes(color = workday)) +
   facet_wrap(~ borough, scales = 'free', ncol = 2)
 ```
-```{r}
+```{r Working VS non-working days(boxplot)}
 ggplot(uber.spread, aes(workday, pickups)) +
   geom_boxplot()
 ```
@@ -578,11 +600,11 @@ Non-working days change the ridership pattern through the day but they do not ha
 
 ### Temperature and rain
 
-```{r}
+```{r Temperature and rain(temperature)}
 ggplot(uber.spread, aes(hour, Manhattan)) +
   geom_jitter(alpha = 0.4, aes(color = temp > 75))
 ```
-```{r}
+```{r Temperature and rain(rain)}
 ggplot(uber.spread, aes(hour, Manhattan)) +
   geom_jitter( alpha = 0.4, aes(color = pcp01 > 0))
 ```
@@ -599,7 +621,7 @@ The following actions will take place before the creation of the model:
 * Use a subset of the dataset, keeping only the 4 major boroughs that follow the same pattern.  
 * Cut off the last week from the 'training' dataset to use it for validation of the model.
 
-```{r}
+```{r Creating lag variables}
 uber.major <- uber.major %>% 
   mutate(`1h` = lag(pickups)) %>% 
   mutate(`2h` = lag(pickups,2)) %>% 
@@ -608,8 +630,9 @@ uber.major <- uber.major %>%
   mutate(`1w` = lag(pickups,168))
 ```
 
-```{r}
-m1 <- lm(pickups ~ pickup_dt + hour + wday + workday + borough, data = uber.major[169:16700,])
+```{r Creating linear model (all boroughs)}
+m1 <- lm(pickups ~ pickup_dt + hour + wday + workday + borough, 
+         data = uber.major[169:16700,])
 m2 <- update(m1, ~ . + `1w`)
 m3 <- update(m2, ~ . + `1d`)
 m4 <- update(m3, ~ . + `3h`)
@@ -623,10 +646,10 @@ detach("package:memisc", unload=TRUE)
 Even the full model, cannot explain a good amount of the variance. This probably because as I noted in the previous sections there are significant differences between the boroughs.  
 Now I will apply the same procedure to a single borough (Manhattan).  
 
-```{r}
-manhattan <- uber %>% 
-  dplyr::select(-(4:12)) %>% 
+```{r Creating Manhattan dataframe}
+manhattan <- uber %>%  
   filter(borough == 'Manhattan') %>% 
+  dplyr::select(pickup_dt:pickups, hour, wday, workday) %>%  
   mutate(`1h` = lag(pickups)) %>% 
   mutate(`2h` = lag(pickups,2)) %>% 
   mutate(`3h` = lag(pickups,3)) %>% 
@@ -635,24 +658,51 @@ manhattan <- uber %>%
   dplyr::select(-borough)
 ```
 
-```{r}
-m1 <- lm(pickups ~ pickup_dt + hour + wday + workday, data = manhattan[169:4175,])
+```{r Creating linear model for Manhattan}
+manhattan.train <- manhattan[169:4175,]
+
+m1 <- lm(pickups ~ pickup_dt + hour + wday + workday, 
+         data = manhattan.train)
 m2 <- update(m1, ~ . + `1w` - pickup_dt)
 m3 <- update(m2, ~ . + `1d`)
 m4 <- update(m3, ~ . + `3h`)
 m5 <- update(m4, ~ . + `2h`)
 m6 <- update(m5, ~ . + `1h`)
+
 library(memisc)
+
 mtable(m1, m2, m3, m4, m5, m6, sdigits = 3)
+
 detach("package:memisc", unload=TRUE)
 ```
 
 We can notice that even the model with just the weekly lag variable has better r-squared value from the full model applied to the general dataset.  
 The full model applied to a single borough can explain 95% of the variance.  
+
+We can check visually the consistency of the models by using a residual plot.
+
+```{r Residual plot}
+manhattan.train <- manhattan.train %>% 
+mutate(m1 = resid(m1)) %>% 
+mutate(m2 = resid(m2)) %>% 
+mutate(m3 = resid(m3)) %>% 
+mutate(m4 = resid(m4)) %>% 
+mutate(m5 = resid(m5)) %>% 
+mutate(m6 = resid(m6)) %>%
+  gather('model', 'residual', m1:m6)
+
+ggplot(manhattan.train, aes(pickup_dt, residual)) +
+  geom_point(alpha = 0.1, aes(color = model))
+```
+
+We can see that the 'm1' model underestimates somehow the demand with predicted values being up to 6000 pickups per hour lower than the demand.  
+Once we enter the lag variables the residual is getting into balance and it starts falling from under 2000 to under 500.  
+In general we have well balanced residuals (except m1) which is a strong indication that our models are optimised.  
+
 Now, I will apply the models to the week data that I kept for testing.
 
-```{r, fig.width=12, fig.height=8}
-test <- manhattan[4176:4343,]
+```{r Plotting models, fig.width=12, fig.height=8}
+test <- manhattan %>% slice(4176:4343)
 
 model1 <- predict(m1, newdata = test)
 model2 <- predict(m2, newdata = test)
@@ -668,20 +718,21 @@ test$`3 Hours Prediction` <- model4
 test$`2 Hours Prediction` <- model5
 test$`Hourly Prediction` <- model6
 
-test <- test %>% gather('model', 'prediction', 15:20)
+test <- test %>% gather('model', 'prediction', 11:16)
 
 ggplot(test, aes(pickup_dt, pickups)) +
   geom_point() +
-  geom_line(aes(pickup_dt, prediction, color = model)) +
+  geom_line(aes(pickup_dt, prediction, color = model, linetype = model)) +
   scale_x_datetime(date_breaks = '1 day', date_labels = '%a')
 ```
 
-```{r, fig.width=12, fig.height=8}
-test$wday <- factor(test$wday, levels = c('Wed','Thurs','Fri','Sat','Sun','Mon','Tues'))
+```{r Plotting models per day, fig.width=12, fig.height=8}
+test$wday <- factor(test$wday, levels = c('Wed','Thurs','Fri','Sat','Sun','Mon',
+                                          'Tues'))
 
 ggplot(test, aes(pickup_dt, pickups)) +
   geom_point() +
-  geom_line(aes(pickup_dt, prediction, color = model)) +
+  geom_line(aes(pickup_dt, prediction, color = model, linetype = model)) +
   scale_x_datetime(date_labels = '%H') +
   facet_wrap(~wday, scales = 'free_x')
 ```
@@ -690,10 +741,11 @@ In general terms, all the models but the 'General' have a very good fit on the a
 As the forecasting horizon is getting shorter the model has an advantage on adapting to changes in the demand from the usual pattern like on Tuesday evening or Saturday after 15:00.  
 I cannot leave without mentioning the big underestimation of the model by a magnitude of 1,500 pickups during Saturday evening/nigh. Let's plot the specific day against all other Manhattan's data.
 
-```{r}
+```{r Plotting Saturday June 27}
 ggplot(manhattan, aes(hour, pickups)) +
   geom_point(alpha = 0.1) +
-  geom_line(data = subset(manhattan, yday == 178), aes(hour,pickups,color = 'Saturday June 27'), )
+  geom_line(data = subset(manhattan, yday == 178), 
+            aes(hour, pickups, color = 'Saturday June 27'), )
 ```
 
 We can see that it was a very irregular day with pickups reaching after 15:00 the maximum of all 6 months .
@@ -729,15 +781,19 @@ All of them have a good fit with the weekly model being more robust, not affecte
 # Final Plots and Summary
 
 ### Plot One
-```{r, fig.width=12, fig.height=8}
-uber$borough <- factor(uber$borough, levels = c('Manhattan', 'Brooklyn', 'Queens', 'Bronx', 'Staten Island', 'EWR'))
+```{r Plot One, fig.width=12, fig.height=8}
+uber$borough <- factor(uber$borough, levels = c('Manhattan', 'Brooklyn', 
+                                                'Queens', 'Bronx', 
+                                                'Staten Island', 'EWR'))
 
 ggplot(subset(uber, !is.na(borough)), aes(pickups)) +
   geom_histogram(aes(fill = borough), bins = 40) +
   scale_x_sqrt() +
   facet_wrap(~ borough, ncol = 2, scales = 'free') +
-  labs(title = 'Pickups per hour distribution by borough', x = 'Pickups per hour', y = 'Count') +
-  theme(plot.title = element_text(size = 22, hjust = 0.5), legend.position = 'none', axis.title = element_text(size = 16))
+  labs(title = 'Pickups per hour distribution by borough', 
+       x = 'Pickups per hour', y = 'Count') +
+  theme(plot.title = element_text(size = 22, hjust = 0.5), 
+        legend.position = 'none', axis.title = element_text(size = 16))
 ```
 
 ### Description One
@@ -746,7 +802,7 @@ Staten Island's pickups follow a geometric distribution because of the very smal
 Finally, on EWR the demand is practically zero with a very few pickups that we may consider as outliers.
 
 ### Plot Two
-```{r, fig.width=12, fig.height=8}
+```{r Plot Two, fig.width=12, fig.height=8}
 h1 <- ggplot(uber.spread, aes(x = wday, y = hour, fill = Manhattan)) +
   geom_tile() +
   scale_fill_distiller(palette = 'Spectral') +
@@ -783,7 +839,9 @@ h6 <- ggplot(uber.spread, aes(x = wday, y = hour, fill = EWR)) +
   labs(title = 'EWR', x = 'Day', y = 'Time', fill = 'Pickups per hour') +
   theme(plot.title = element_text(hjust = 0.5))
 
-grid.arrange(h1,h2,h3,h4,h5,h6, ncol = 2)
+grid.arrange(h1,h2,h3,h4,h5,h6, ncol = 2, 
+             top = grid::textGrob("Demand through the week per borough", 
+                            gp = grid::gpar(fontsize=22)))
 ```
 
 ### Description Two
@@ -793,21 +851,29 @@ The four major boroughs follow the same pattern both during the day and through 
 On the two minor boroughs, Staten Island's demand looks random during the day but again we can see that the demand slightly rises as we move through the week. EWR, as we noted before has practically no demand.
 
 ### Plot Three
-```{r, fig.width=12, fig.height=8}
-test$wday <- factor(test$wday, levels = c('Wed','Thurs','Fri','Sat','Sun','Mon','Tues'))
+```{r Plot Three, fig.width=12, fig.height=8}
+test$wday <- factor(test$wday, levels = c('Wed','Thurs','Fri','Sat','Sun','Mon',
+                                          'Tues'))
 
 ggplot(test, aes(pickup_dt, pickups)) +
   geom_point() +
-  geom_line(aes(pickup_dt, prediction, color = model)) +
+  geom_line(aes(pickup_dt, prediction, color = model, linetype = model)) +
   scale_x_datetime(date_labels = '%H') +
   facet_wrap(~wday, scales = 'free_x', ncol = 2) +
-  labs(title = "Models' Performance", x = 'Time', y = 'Pickups', color = 'Model') +
-  theme(plot.title = element_text(size = 22, hjust = 0.5), axis.title = element_text(size = 16))
+  labs(title = "Models' Performance", x = 'Time', y = 'Pickups') +
+  theme(plot.title = element_text(size = 22, hjust = 0.5), 
+        axis.title = element_text(size = 16))
 ```
-
+```{r r-squared calculation}
+test %>% group_by(model) %>% 
+  summarise(`r-squared` = 1 - (sum((pickups - prediction) ^ 2) / 
+                                  sum((pickups - mean(pickups)) ^ 2))) %>% 
+  arrange(desc(`r-squared`))
+```
 ### Description Three
 
-I concluded the Exploratory Data Analysis process with the creation of some models to predict the demand. In general the models had a very good fit with just one occasion of underestimating the actual demand on the highest day of the six months period.
+I concluded the Exploratory Data Analysis process with the creation of some models to predict the demand. In general the models had a very good fit with just one occasion of underestimating the actual demand on the highest day of the six months period.  
+Although this was not a typical week the moddels were able to achive very good r-squared values, from 0.73 for the weekly prediction to 0.95 for the hourly prediction.
 
 ------
 

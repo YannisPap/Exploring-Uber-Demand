@@ -1,10 +1,24 @@
-Exploring UBER demand in NYC
-========================================================
+---
+title: "Exploring Uber Demand in NYC"
+author: Yannis Pappas
+date: February 1, 2017
+output:
+  html_document:
+    toc: true
+    toc_depth: 1
+    toc_float: true
+    keep_md: yes
+  md_document:
+    variant: markdown_github
+    toc: true
+    toc_depth: 1
+    
+---
 
 ```{r global_options, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE,
                       cache = TRUE, cache.path = '../Cache/Exploring-Uber-Demand/', 
-                      fig.path = '../Figures/Exploring-Uber-Demand/')
+                      fig.path = './Figures/')
 ```
 
 ```{r Loading libraries}
@@ -27,6 +41,7 @@ library(lubridate)
 library(grid)
 ```
 
+# Introduction
 In the current project I'm exploring the factors that affect Uber cars demand in NYC.  
 For the exploration I have prepared a dataset by merging data that intuitively seem as possible factors to the analysis. These are:  
 
@@ -602,11 +617,13 @@ Non-working days change the ridership pattern through the day but they do not ha
 
 ```{r Temperature and rain(temperature)}
 ggplot(uber.spread, aes(hour, Manhattan)) +
-  geom_jitter(alpha = 0.4, aes(color = temp > 75))
+  geom_jitter(alpha = 0.4, aes(color = temp > 75)) +
+  geom_smooth(aes(color = temp > 75))
 ```
 ```{r Temperature and rain(rain)}
 ggplot(uber.spread, aes(hour, Manhattan)) +
-  geom_jitter( alpha = 0.4, aes(color = pcp01 > 0))
+  geom_jitter( alpha = 0.4, aes(color = pcp01 > 0)) +
+  geom_smooth(aes(color = pcp01 > 0))
 ```
 
 Against our intuition, neither temperature nor rain play any significant role on the ridership. Even that we noticed a positive correlation between demand and temperature on higher temperatures, most probably it is because these temperatures are taking place during high demand hours (after 15:00).

@@ -1,18 +1,17 @@
 ---
 title: "Exploring Uber Demand in NYC"
-author: Yannis Pappas
-date: February 1, 2017
+author: "Yannis Pappas"
+date: "February 1, 2017"
 output:
-  html_document:
-    toc: true
-    toc_depth: 1
-    toc_float: true
-    keep_md: yes
   md_document:
-    variant: markdown_github
-    toc: true
+    toc: yes
     toc_depth: 1
-    
+    variant: markdown_github
+  html_document:
+    keep_md: yes
+    toc: yes
+    toc_depth: 1
+    toc_float: yes
 ---
 
 ```{r global_options, include=FALSE}

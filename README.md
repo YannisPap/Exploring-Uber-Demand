@@ -62,11 +62,11 @@ The main dataset contained over 10 million observations of 4 variables which agg
 ## Pickups
 
 
-![](./Figures/Pickups histogram-1.png)<!-- -->
+![test](Figures/Pickups histogram-1.png)
 
 The histogram is heavily skewed. I will use a square root scale on both axis to observe the left side more clearly.
 
-![](./Figures/Pickups histogram(sqrt)-1.png)<!-- -->
+![test](./Figures/Pickups histogram(sqrt)-1.png)
 
 This is a quite strange distribution. It looks like a union of normal distributions. I am suspecting that the different boroughs have very discrete distributions.  
 Although I am still in the univariate exploration phase I need to see the above histogram on borough level.

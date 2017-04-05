@@ -12,7 +12,7 @@ Using the above conclusions I was able to model the demand with forecasting hori
 
 Since the model is based on past observations it is prone to wrong estimations on very irregular conditions. Additionally since current observations affect future prediction, demand out of the ordinary levels may lead to wrong estimation at some point to later predictions.  
 
-(**Note**: *This is a brief report of the results. Also available the full analysis ([HTML](https://yannispap.github.io/Exploring-Uber-Demand/) / [Markdown](https://github.com/YannisPap/Exploring-Uber-Demand/blob/master/exploring_uber_demand.md)) and the [R Notebook](https://github.com/YannisPap/Exploring-Uber-Demand/blob/master/exploring_uber_demand.Rmd).*)  
+(**Note**: *This is a brief report of the results. Also available, the full analysis ([HTML](https://yannispap.github.io/Exploring-Uber-Demand/) / [Markdown](https://github.com/YannisPap/Exploring-Uber-Demand/blob/master/exploring_uber_demand.md)) and the [R Notebook](https://github.com/YannisPap/Exploring-Uber-Demand/blob/master/exploring_uber_demand.Rmd).*)  
 
 ***
 

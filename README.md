@@ -2,7 +2,7 @@
 
 ![](http://www.sharingcodes.com/wp-content/uploads/2014/08/uber-new-york-map-713x330.png)
 
-## Summary
+## Summary  
 
 The dataset I used for this project included data of Uber cars' ridership in the city of New York for the first six months of 2015. As I was exploring it, I noticed that, against my initial intuition, the weather variables had not any or very weak impact on the ridership.  
 Going further in my analysis it was getting more clear that the demand follows specific patterns both during the day and during the week.  
@@ -12,8 +12,7 @@ Using the above conclusions I was able to model the demand with forecasting hori
 
 Since the model is based on past observations it is prone to wrong estimations on very irregular conditions. Additionally since current observations affect future prediction, demand out of the ordinary levels may lead to wrong estimation at some point to later predictions.  
 
-Below you may find the Final Plots and Summary section.  
-[Full analysis](https://yannispap.github.io/Exploring-Uber-Demand/)
+(**Note**: *This is a brief report of the results. Also available the full analysis ([HTML](https://yannispap.github.io/Exploring-Uber-Demand/) / [Markdown](https://github.com/YannisPap/Exploring-Uber-Demand/blob/master/exploring_uber_demand.md)) and the [R Notebook](https://github.com/YannisPap/Exploring-Uber-Demand/blob/master/exploring_uber_demand.Rmd).*)  
 
 ***
 

@@ -1,6 +1,6 @@
 # Exploring Uber demand in NYC
 
-![](http://www.sharingcodes.com/wp-content/uploads/2014/08/uber-new-york-map-713x330.png)
+![]({{site.baseurl}}/images/10160052.jpeg)
 
 ## Summary  
 

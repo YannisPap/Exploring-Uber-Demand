@@ -1,6 +1,6 @@
 # Exploring Uber demand in NYC
 
-![]({{site.baseurl}}/images/10160052.jpeg)
+![](images/10160052.jpeg)
 
 ## Summary  
 

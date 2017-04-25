@@ -3,15 +3,15 @@ title: "Exploring Uber Demand in NYC"
 author: "Yannis Pappas"
 date: "February 1, 2017"
 output:
-  md_document:
-    toc: yes
-    toc_depth: 1
-    variant: markdown_github
   html_document:
     keep_md: yes
     toc: yes
     toc_depth: 1
     toc_float: yes
+  md_document:
+    toc: yes
+    toc_depth: 1
+    variant: markdown_github
 ---
 
 ```{r global_options, include=FALSE}
@@ -729,7 +729,7 @@ model6 <- predict(m6, newdata = test)
 
 test$`General Predection` <- model1
 test$`Weekly Prediction` <- model2
-test$`Dayly Prediction` <- model3
+test$`Daily Prediction` <- model3
 test$`3 Hours Prediction` <- model4
 test$`2 Hours Prediction` <- model5
 test$`Hourly Prediction` <- model6

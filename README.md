@@ -20,7 +20,7 @@ Since the model is based on past observations it is prone to wrong estimations o
 
 ### Plot One
 
-![download.png](figures/Plot%20One-1.png)
+![download.png](figures/Plot_One-1.png)
 
 ### Description One
 The distribution of the four major boroughs, on a square rooted scale, are mainly normal to bimodal because of the quick rise of the demand during the morning hours.  
@@ -31,7 +31,7 @@ Finally, on EWR the demand is practically zero with a very few pickups that we m
 
 ### Plot Two
 
-![plot2.png](figures/Plot%20Two-1.png)
+![plot2.png](figures/Plot_Two-1.png)
 
 ### Description Two
 
@@ -44,7 +44,7 @@ On the two minor boroughs, Staten Island's demand looks random during the day bu
 
 ### Plot Three
 
-![plot3.png](figures/Plot%20Three-1.png)
+![plot3.png](figures/Plot_Three-1.png)
 
 ### Description Three
 

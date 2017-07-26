@@ -3,15 +3,15 @@ title: "Exploring Uber Demand in NYC"
 author: "Yannis Pappas"
 date: "February 1, 2017"
 output:
-  md_document:
-    toc: yes
-    toc_depth: 1
-    variant: markdown_github
   html_document:
     keep_md: yes
     toc: yes
     toc_depth: 1
     toc_float: yes
+  md_document:
+    toc: yes
+    toc_depth: 1
+    variant: markdown_github
 ---
 
 ```{r global_options, include=FALSE}
@@ -20,7 +20,7 @@ knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE,
                       fig.path = './figures/')
 ```
 
-```{r Loading_libraries}
+```{r Loading_libraries, include=FALSE}
 # Load all of the packages that you end up using
 # in your analysis in this code chunk.
 
